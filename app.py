@@ -47,64 +47,62 @@ if student_file and faculty_file:
             kmeans = KMeans(n_clusters=num_clusters, random_state=42)
             df_students['cluster'] = kmeans.fit_predict(X_students)
 
-            # Check if clustering was successful
-            if df_students['cluster'].isnull().any():
-                st.error("Clustering did not produce valid results. Please check your input data.")
-            else:
-                # Create balanced clusters
-                clusters = df_students.groupby('cluster')['student_id'].apply(list).tolist()
-                students = list(chain.from_iterable(clusters))
-                balanced_clusters = [students[i:i + 3] for i in range(0, len(students), 3)]
+            # Create balanced clusters
+            clusters = df_students.groupby('cluster')['student_id'].apply(list).tolist()
+            students = list(chain.from_iterable(clusters))
+            balanced_clusters = [students[i:i + 3] for i in range(0, len(students), 3)]
 
-                # Create a DataFrame for final data
-                balanced_df = pd.DataFrame([(i, student_id) for i, cluster in enumerate(balanced_clusters) for student_id in cluster],
-                                           columns=['cluster', 'student_id'])
-                final_df = balanced_df.merge(df_students, on='student_id', how='left')
+            # Create a DataFrame for final data
+            balanced_df = pd.DataFrame([(i, student_id) for i, cluster in enumerate(balanced_clusters) for student_id in cluster],
+                                       columns=['cluster', 'student_id'])
 
-                # Prepare to assign faculty based on cluster skills
-                X_faculty = vectorizer_skills.transform(df_faculty['expertise'])
+            # Merge to get the full student information
+            final_df = balanced_df.merge(df_students[['student_id', 'skills', 'interest_to_work']], on='student_id', how='left')
 
-                # Aggregate student skills per cluster
-                cluster_skills = final_df.groupby('cluster')['skills'].apply(lambda x: ' '.join(x)).reset_index()
+            # Prepare to assign faculty based on cluster skills
+            X_faculty = vectorizer_skills.fit_transform(df_faculty['expertise'])
 
-                # Vectorize cluster skills
-                X_cluster_skills = vectorizer_skills.transform(cluster_skills['skills'])
+            # Aggregate student skills per cluster
+            cluster_skills = final_df.groupby('cluster')['skills'].apply(lambda x: ' '.join(x)).reset_index()
 
-                # Calculate similarity between cluster skills and faculty expertise
-                similarity_matrix = cosine_similarity(X_cluster_skills, X_faculty)
+            # Vectorize cluster skills
+            X_cluster_skills = vectorizer_skills.transform(cluster_skills['skills'])
 
-                # Assign faculty based on highest similarity
-                assigned_faculty = [-1] * num_clusters  
-                faculty_assigned = set()  
+            # Calculate similarity between cluster skills and faculty expertise
+            similarity_matrix = cosine_similarity(X_cluster_skills, X_faculty)
 
-                for cluster_idx in range(num_clusters):
-                    similarity_scores = similarity_matrix[cluster_idx]
-                    faculty_ranking = np.argsort(-similarity_scores)
+            # Assign faculty based on highest similarity
+            assigned_faculty = [-1] * num_clusters  
+            faculty_assigned = set()  
 
-                    for faculty_id in faculty_ranking:
-                        if faculty_id not in faculty_assigned:
-                            assigned_faculty[cluster_idx] = df_faculty.iloc[faculty_id]['faculty_id']
-                            faculty_assigned.add(faculty_id)
-                            break
+            for cluster_idx in range(num_clusters):
+                similarity_scores = similarity_matrix[cluster_idx]
+                faculty_ranking = np.argsort(-similarity_scores)
 
-                # Add assigned faculty to cluster skills DataFrame
-                cluster_skills['assigned_faculty_id'] = assigned_faculty
+                for faculty_id in faculty_ranking:
+                    if faculty_id not in faculty_assigned:
+                        assigned_faculty[cluster_idx] = df_faculty.iloc[faculty_id]['faculty_id']
+                        faculty_assigned.add(faculty_id)
+                        break
 
-                # Final merge to include assigned faculty in the final DataFrame
-                final_data_with_faculty = final_df.merge(cluster_skills[['cluster', 'assigned_faculty_id']], on='cluster', how='left')
+            # Add assigned faculty to cluster skills DataFrame
+            cluster_skills['assigned_faculty_id'] = assigned_faculty
 
-                # Prepare final output by excluding faculty skills
-                final_output = final_data_with_faculty[['student_id', 'cluster', 'assigned_faculty_id', 'skills', 'interest_to_work']]
-                
-                # Prepare file for download
-                final_file_name = "clustered_students_with_faculty.csv"
-                final_output.to_csv(final_file_name, index=False)
+            # Final merge to include assigned faculty in the final DataFrame
+            final_data_with_faculty = final_df.merge(cluster_skills[['cluster', 'assigned_faculty_id']], on='cluster', how='left')
 
-                # Provide download link
-                st.success("Clustering and faculty assignment completed successfully!")
-                st.write("Download the resulting CSV file:")
-                with open(final_file_name, "rb") as f:
-                    st.download_button(label="Download CSV", data=f, file_name=final_file_name, mime="text/csv")
+            # Prepare final output by excluding faculty skills
+            final_output = final_data_with_faculty[['student_id', 'cluster', 'assigned_faculty_id', 'skills', 'interest_to_work']]
+            
+            # Prepare file for download
+            final_file_name = "clustered_students_with_faculty.csv"
+            final_output.to_csv(final_file_name, index=False)
+
+            # Provide download link
+            st.success("Clustering and faculty assignment completed successfully!")
+            st.write("Download the resulting CSV file:")
+            with open(final_file_name, "rb") as f:
+                st.download_button(label="Download CSV", data=f, file_name=final_file_name, mime="text/csv")
         except Exception as e:
             st.error(f"Error occurred: {e}")
 else:
