@@ -93,9 +93,12 @@ if student_file and faculty_file:
                 # Final merge to include assigned faculty in the final DataFrame
                 final_data_with_faculty = final_df.merge(cluster_skills[['cluster', 'assigned_faculty_id']], on='cluster', how='left')
 
+                # Prepare final output by excluding faculty skills
+                final_output = final_data_with_faculty[['student_id', 'cluster', 'assigned_faculty_id', 'skills', 'interest_to_work']]
+                
                 # Prepare file for download
                 final_file_name = "clustered_students_with_faculty.csv"
-                final_data_with_faculty.to_csv(final_file_name, index=False)
+                final_output.to_csv(final_file_name, index=False)
 
                 # Provide download link
                 st.success("Clustering and faculty assignment completed successfully!")
