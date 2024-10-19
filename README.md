@@ -1,5 +1,6 @@
 # Creative Student Clustering & Faculty Assignment
-
+## Link to access the application 
+https://student-grouping-k8k8k8jw7pvcnvpbnypuy8.streamlit.app/#clustering-results
 ## Overview
 
 This project involves clustering students based on their skills and interests, and assigning both main and supporting faculties to each cluster. The application uses a creative UI built with Streamlit, allowing users to upload CSV files for student and faculty data, and outputs clustered results with faculty assignments. Additionally, the results can be downloaded as a CSV file.
