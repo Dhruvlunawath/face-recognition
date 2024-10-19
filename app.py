@@ -90,7 +90,8 @@ def assign_faculty(df_students, df_faculty, balanced_df):
 
             # Ensure the supporting faculty is from a different domain than the main faculty
             if faculty_expertise != main_faculty_expertise and df_faculty.iloc[faculty_id]['faculty_id'] != main_faculty_id:
-                support_for_cluster.append(df_faculty.iloc[faculty_id]['faculty_id'])
+                support_for_cluster.append(int(df_faculty.iloc[faculty_id]['faculty_id']))  # Convert to native int
+
 
             if len(support_for_cluster) == 2:  # Limit support members to 2 per cluster
                 break
