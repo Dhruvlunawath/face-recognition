@@ -25,7 +25,7 @@ def cluster_students(df_students):
 
     num_clusters = (len(df_students) + 2) // 3  
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-    df_students['cluster'] = kmeans.fit_predict(X_students)
+    df_students['cluster'] = kmeans.fit_predict(X_students)+1
 
     return df_students, num_clusters
 
